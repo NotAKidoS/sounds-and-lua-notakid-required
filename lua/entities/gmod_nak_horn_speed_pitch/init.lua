@@ -1,3 +1,6 @@
+--//THIS CODE IS FOR AN ENTITY, SO WHEN IT TOUCHES CAR IT WILL MAKE THE HORN CHANGE PITCH BASED ON CLAMPED RPM!
+--//Its implementation is really really really bad and will break things really bad. I accidently left it in here when uploading to github.
+
 AddCSLuaFile( "cl_init.lua" )
 AddCSLuaFile( "shared.lua" )
 include('shared.lua')
