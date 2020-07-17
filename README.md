@@ -18,3 +18,9 @@ ElasticHeight sets the suspension height for that wheel when broken, can be used
 # NAK.NetworkAnim(ent)
 ent is vehicle
 This enables airboat animation on vehicle, possibly useful for bike simfphys!
+
+
+The sounds have to be cleaned up and sorted still. Have not gotten around to it.
+There are a few broken duplicates and random folders.
+
+Included models are shared weapon models mostly, like missles and mortars. Still wip.
