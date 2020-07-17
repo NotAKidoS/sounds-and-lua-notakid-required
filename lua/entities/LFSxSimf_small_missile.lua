@@ -1,3 +1,4 @@
+--//Missle entity adapted from LFS, using this I can make missles not collide with Simfphys vehicles when driving fast and firing them. Still have not finished it yet!
 AddCSLuaFile()
 
 
