@@ -85,3 +85,37 @@ function NAK.SpawnColor( ent, Select )
 		ent:SetColor(CoolColorTable[math.random(1,#CoolColorTable)])
 	end
 end
+--[[
+Creates an object to act as the trailer stand, because gmod is pp and has no moving collisions
+]]
+function NAK.TrailerLegs( ent, LPos, LPos2 )
+	if true then
+		ent.NAKTrProp = ents.Create("prop_physics")
+		ent.NAKTrProp:SetModel("models/hunter/blocks/cube025x150x025.mdl")
+		ent.NAKTrProp:SetPos( ent:LocalToWorld( LPos ) )
+		ent.NAKTrProp:SetAngles( ent:GetAngles() )
+		ent.NAKTrProp:Spawn()
+		ent.NAKTrProp:Activate()
+		ent.NAKTrProp:GetPhysicsObject():SetMass( 2000 )
+		
+		local hydraulic, rope, controller = constraint.Hydraulic(nil, ent, ent.NAKTrProp, 0, 0, LPos2, Vector(0,-20,0), 64, 0, 0, KEY_NONE, 1, 10000000, nil, true)
+
+		ent.TrHydraulic = hydraulic
+		ent.TrController = controller
+		controller.direction = 1
+	end
+	
+	ent.TrailerStandNAK = function(Connected)
+		if IsValid(ent.TrController) then
+			if Connected then
+				ent:SetPoseParameter( "trailer_legs", 1 )
+				ent.TrController.direction = -1
+				ent.TrHydraulic:SetCollisionGroup( COLLISION_GROUP_WORLD )
+			else
+				ent:SetPoseParameter( "trailer_legs", 0 )
+				ent.TrController.direction = 1
+				ent.TrHydraulic:SetCollisionGroup( COLLISION_GROUP_NONE )
+			end
+		end
+	end
+end
