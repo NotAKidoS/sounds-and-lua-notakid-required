@@ -88,34 +88,114 @@ end
 --[[
 Creates an object to act as the trailer stand, because gmod is pp and has no moving collisions
 ]]
-function NAK.TrailerLegs( ent, LPos, LPos2 )
-	if true then
-		ent.NAKTrProp = ents.Create("prop_physics")
-		ent.NAKTrProp:SetModel("models/hunter/blocks/cube025x150x025.mdl")
-		ent.NAKTrProp:SetPos( ent:LocalToWorld( LPos ) )
-		ent.NAKTrProp:SetAngles( ent:GetAngles() )
-		ent.NAKTrProp:Spawn()
-		ent.NAKTrProp:Activate()
-		ent.NAKTrProp:GetPhysicsObject():SetMass( 2000 )
-		
-		local hydraulic, rope, controller = constraint.Hydraulic(nil, ent, ent.NAKTrProp, 0, 0, LPos2, Vector(0,-20,0), 64, 0, 0, KEY_NONE, 1, 10000000, nil, true)
+CreateConVar( "nak_tr_legs", 0, FCVAR_ARCHIVE, "Enables trailer legs on my trailers!", 0, 1 )
+local function ToggleLegs(ent, Connected)
 
-		ent.TrHydraulic = hydraulic
-		ent.TrController = controller
-		controller.direction = 1
-	end
-	
-	ent.TrailerStandNAK = function(Connected)
-		if IsValid(ent.TrController) then
-			if Connected then
-				ent:SetPoseParameter( "trailer_legs", 1 )
-				ent.TrController.direction = -1
-				ent.TrHydraulic:SetCollisionGroup( COLLISION_GROUP_WORLD )
-			else
-				ent:SetPoseParameter( "trailer_legs", 0 )
-				ent.TrController.direction = 1
-				ent.TrHydraulic:SetCollisionGroup( COLLISION_GROUP_NONE )
-			end
+	--//around 12 mph~
+	if ent:GetVelocity():Length() > 200 then return end
+
+	if IsValid(ent.TrController) then
+		if Connected or (!Connected && ent.TrController.dirlast == 1) then
+			ent.NAKTrProp:GetPhysicsObject():SetMass( 100 )
+			ent:SetPoseParameter( "trailer_legs", 100 )
+			ent.TrController.direction = -1
+			ent.TrController.dirlast = -1
+		else
+			ent.NAKTrProp:GetPhysicsObject():SetMass( 2000 )
+			ent:SetPoseParameter( "trailer_legs", 0 )
+			ent.TrController.direction = 1
+			ent.TrController.dirlast = 1
 		end
 	end
+end
+function NAK.DisableUse(ent)
+	ent.Use = nil
+    for i = 1, table.Count(ent.Wheels) do 
+		ent.Wheels[i].Use = nil
+	end
+end
+function NAK.TrailerLegs( ent, LPos )
+	if GetConVar( "nak_tr_legs" ):GetInt() == 0 then return end
+	
+	ent.NAKTrProp = ents.Create("prop_physics")
+	ent.NAKTrProp:SetModel("models/hunter/blocks/cube025x150x025.mdl")
+	ent.NAKTrProp:SetPos( ent:LocalToWorld( LPos ) )
+	ent.NAKTrProp:SetAngles( ent:GetAngles() )
+	ent.NAKTrProp:Spawn()
+	ent.NAKTrProp:Activate()
+	ent.NAKTrProp:GetPhysicsObject():SetMass( 2000 )
+	ent.NAKTrProp:GetPhysicsObject():SetDragCoefficient( -9000 )
+	
+	local propOffset = LPos * Vector(0,-1,0)
+	local LPos2 = LPos * Vector(1,0,1) + Vector(0,0,60)
+	local debug = GetConVar( "nak_base_debug" )
+	
+	local hydraulic, rope, controller = constraint.Hydraulic(nil, ent, ent.NAKTrProp, 0, 0, LPos2, propOffset, 60, 0, math.abs(debug:GetInt() - 1), KEY_NONE, 1, 10000000, nil, true)
+	--rope to lock the prop from going down too far
+	constraint.Rope( ent, ent.NAKTrProp, 0, 0, LPos2, propOffset, 60, 0, 0, math.abs(debug:GetInt() - 1), "cable/rope", false )
+	--rope to lock the prop from going up too far
+	constraint.Rope( ent, ent.NAKTrProp, 0, 0, LPos2 - Vector(0,0,60), propOffset, 60, 0, 0, math.abs(debug:GetInt() - 1), "cable/cable2", false )
+	--nocollide
+	constraint.NoCollide( ent, ent.NAKTrProp, 0, 0	)
+	--hide the prop (seems to not work with Improved Object Render)
+	ent.NAKTrProp:DrawShadow( false )
+	ent.NAKTrProp:SetNoDraw( debug:GetBool() )
+
+	ent.TrHydraulic = hydraulic
+	ent.TrController = controller
+	ent.TrController.direction = 1
+	ent.TrController.dirlast = 1
+
+	ent.TrailerStandNAK = function(ent, Connected)
+		ToggleLegs(ent, Connected)
+	end
+
+	ent.Use = function(ent, ply)
+		if ply:GetActiveWeapon():GetClass() == "weapon_crowbar" then
+			ToggleLegs(ent)
+		end
+	end
+
+	NAK.PropRemove( ent, ent.NAKTrProp )
+	-- local dblist = {
+		-- "Prop Spawned:",
+		-- IsValid(ent.NAKTrProp),
+		-- "Hydraulic:",
+		-- IsValid(ent.TrHydraulic),
+		-- "Controller:",
+		-- IsValid(ent.TrController), 
+		-- "Function on Trailer:",
+		-- ent.TrailerStandNAK,
+	-- }
+	-- NAK.Debug( ent, nil, "Trailer Legs Spawned!", dblist )
+end
+--[[
+Global debug command
+]]
+CreateConVar( "nak_base_debug", 1, {FCVAR_NOTIFY}, "Global Debugging for my addons", 0, 1 )
+function NAK.Debug( ent, Var1, Var2, Var3 )
+	if GetConVar( "nak_base_debug" ):GetInt() == 1 then return end
+	if Var1 then
+		print(Var1)
+	end
+	if Var2 then
+		PrintMessage( HUD_PRINTTALK, Var2 )
+	end
+	if Var3 then
+		PrintTable(Var3)
+	end
+end
+--[[
+Function to delete props with a vehicle, sometimes I need this so I am just making it available for later
+]]
+function NAK.PropRemove( ent, prop )
+	if !ent.NAKRemoveList then
+		ent.NAKRemoveList = {}
+		ent:CallOnRemove("NAKRemoveFunc", function(ent) 
+			for k, v in pairs( ent.NAKRemoveList ) do
+				if IsValid(k) then k:Remove() end
+			end
+		end)
+	end
+	ent.NAKRemoveList[prop] = prop
 end

@@ -5,7 +5,6 @@ return {
 			if trailer.TrailerStandNAK then
 				trailer:TrailerStandNAK(true)
 			end
-			print("TrailerStandNAK was TRUE")
         end
     end,
     Disconnect = function(ventity)
@@ -14,7 +13,6 @@ return {
 			if trailer.TrailerStandNAK then
 				trailer:TrailerStandNAK(false)
 			end
-			print("TrailerStandNAK was FALSE")
         end
     end
 }
